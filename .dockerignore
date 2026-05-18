@@ -1,0 +1,10 @@
+target
+.git
+.idea
+.vscode
+jdk17
+.codex-*
+*.out
+*.err
+.env
+.env.*

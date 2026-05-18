@@ -1,0 +1,90 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command:
+      - mysqld
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: carechain
+      MYSQL_USER: ${CARECHAIN_DB_USERNAME:?Set CARECHAIN_DB_USERNAME}
+      MYSQL_PASSWORD: ${CARECHAIN_DB_PASSWORD:?Set CARECHAIN_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${CARECHAIN_DB_ROOT_PASSWORD:?Set CARECHAIN_DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:${MANAGEMENT_PORT:-8081}/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      CARECHAIN_DB_URL: ${CARECHAIN_DB_URL:?Set CARECHAIN_DB_URL}
+      CARECHAIN_DB_USERNAME: ${CARECHAIN_DB_USERNAME:?Set CARECHAIN_DB_USERNAME}
+      CARECHAIN_DB_PASSWORD: ${CARECHAIN_DB_PASSWORD:?Set CARECHAIN_DB_PASSWORD}
+      CARECHAIN_JWT_SECRET: ${CARECHAIN_JWT_SECRET:?Set CARECHAIN_JWT_SECRET}
+      CARECHAIN_JWT_EXPIRATION: ${CARECHAIN_JWT_EXPIRATION:-86400000}
+      CARECHAIN_ALLOWED_ORIGINS: ${CARECHAIN_ALLOWED_ORIGINS:-}
+      CARECHAIN_COOKIE_DOMAIN: ${CARECHAIN_COOKIE_DOMAIN:-}
+      CARECHAIN_BOOTSTRAP_ADMIN_EMAIL: ${CARECHAIN_BOOTSTRAP_ADMIN_EMAIL:-}
+      CARECHAIN_BOOTSTRAP_ADMIN_PASSWORD: ${CARECHAIN_BOOTSTRAP_ADMIN_PASSWORD:-}
+      CARECHAIN_BOOTSTRAP_ADMIN_NAME: ${CARECHAIN_BOOTSTRAP_ADMIN_NAME:-CareChain Admin}
+      CARECHAIN_DB_MAX_POOL_SIZE: ${CARECHAIN_DB_MAX_POOL_SIZE:-10}
+      CARECHAIN_DB_MIN_IDLE: ${CARECHAIN_DB_MIN_IDLE:-2}
+      CARECHAIN_BILLING_CURRENCY: ${CARECHAIN_BILLING_CURRENCY:-INR}
+      CARECHAIN_BILLING_CONSULTATION_FEE: ${CARECHAIN_BILLING_CONSULTATION_FEE:-650}
+      CARECHAIN_BILLING_DISCHARGE_FEE: ${CARECHAIN_BILLING_DISCHARGE_FEE:-250}
+      CARECHAIN_BILLING_GENERAL_DAILY_RATE: ${CARECHAIN_BILLING_GENERAL_DAILY_RATE:-2200}
+      CARECHAIN_BILLING_ICU_DAILY_RATE: ${CARECHAIN_BILLING_ICU_DAILY_RATE:-9500}
+      CARECHAIN_BILLING_EMERGENCY_DAILY_RATE: ${CARECHAIN_BILLING_EMERGENCY_DAILY_RATE:-4000}
+      CARECHAIN_BILLING_MATERNITY_DAILY_RATE: ${CARECHAIN_BILLING_MATERNITY_DAILY_RATE:-3500}
+      MANAGEMENT_PORT: ${MANAGEMENT_PORT:-8081}
+      JAVA_OPTS: "${JAVA_OPTS:--XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+volumes:
+  mysql-data:
+  grafana-data:

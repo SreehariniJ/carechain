@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareChain - Bed Availability</title>
+    <link href="/webjars/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root { --bg:#0f1117; --card:#1a1d27; --border:#2a2d3a; --accent:#3b82f6; --text:#e4e4e7; --muted:#71717a; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        .navbar-cc { background:rgba(26,29,39,0.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:16px 0; }
+        .navbar-cc .container-main { display:flex; justify-content:space-between; align-items:center; padding-top:0; padding-bottom:0; }
+        .navbar-cc .brand { font-size:1.25rem; font-weight:700; color:#fff; text-decoration:none; }
+        .navbar-cc .brand i { color:var(--accent); margin-right:8px; }
+        .btn-back { background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text); padding:8px 20px; border-radius:8px; cursor:pointer; text-decoration:none; font-size:0.85rem; transition:all 0.2s; }
+        .btn-back:hover { background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.3); color:#3b82f6; }
+        .container-main { max-width:1200px; margin:0 auto; padding:32px 20px; }
+        h2 { font-size:1.5rem; font-weight:700; margin-bottom:8px; }
+        .subtitle { color:var(--muted); font-size:0.9rem; margin-bottom:32px; }
+        .ward-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+        .ward-card {
+            background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px;
+            transition:all 0.3s;
+        }
+        .ward-card:hover { border-color:rgba(59,130,246,0.3); transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.25); }
+        .ward-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .ward-name { font-size:1.1rem; font-weight:600; }
+        .ward-type {
+            padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;
+        }
+        .type-GENERAL { background:rgba(59,130,246,0.15); color:#3b82f6; }
+        .type-ICU { background:rgba(239,68,68,0.15); color:#ef4444; }
+        .type-EMERGENCY { background:rgba(245,158,11,0.15); color:#f59e0b; }
+        .type-MATERNITY { background:rgba(168,85,247,0.15); color:#a855f7; }
+        .progress-section { margin-top:12px; }
+        .progress-bar-bg {
+            width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden; margin:8px 0;
+        }
+        .progress-bar-fill {
+            height:100%; border-radius:4px; transition:width 0.6s ease;
+        }
+        .progress-bar-fill.high { background:linear-gradient(90deg,#22c55e,#16a34a); }
+        .progress-bar-fill.medium { background:linear-gradient(90deg,#f59e0b,#d97706); }
+        .progress-bar-fill.low { background:linear-gradient(90deg,#ef4444,#dc2626); }
+        .bed-stats { display:flex; justify-content:space-between; font-size:0.85rem; }
+        .bed-stats .available { color:#22c55e; font-weight:600; }
+        .bed-stats .total { color:var(--muted); }
+        .big-number { font-size:2.5rem; font-weight:700; margin:8px 0; }
+        .big-number.plenty { color:#22c55e; }
+        .big-number.few { color:#f59e0b; }
+        .big-number.none { color:#ef4444; }
+        .empty-state { text-align:center; padding:60px; color:var(--muted); }
+        .empty-state i { font-size:3rem; margin-bottom:16px; display:block; }
+    </style>
+</head>
+<body>
+    <nav class="navbar-cc">
+        <div class="container-main">
+            <a href="/beds/availability" class="brand"><i class="bi bi-heart-pulse"></i>CareChain</a>
+            <a href="/login" class="btn-back"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
+        </div>
+    </nav>
+
+    <div class="container-main">
+        <h2><i class="bi bi-hospital me-2" style="color:var(--accent)"></i>Bed Availability</h2>
+        <p class="subtitle">Live bed availability across all wards. No login required.</p>
+
+        <div id="wardGrid" class="ward-grid">
+            <div class="empty-state" style="grid-column:1/-1"><i class="bi bi-hourglass-split"></i>Loading ward data...</div>
+        </div>
+    </div>
+
+    <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script>
+        async function loadAvailability() {
+            try {
+                const res = await fetch('/api/beds/availability');
+                const wards = await res.json();
+                const grid = document.getElementById('wardGrid');
+
+                if (wards.length === 0) {
+                    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="bi bi-inbox"></i>No wards configured yet</div>';
+                    return;
+                }
+
+                grid.innerHTML = wards.map(w => {
+                    const pct = w.totalBeds > 0 ? (w.availableBeds / w.totalBeds) * 100 : 0;
+                    const cls = pct > 50 ? 'high' : pct > 20 ? 'medium' : 'low';
+                    const numCls = pct > 50 ? 'plenty' : pct > 20 ? 'few' : 'none';
+                    return `
+                        <div class="ward-card">
+                            <div class="ward-header">
+                                <span class="ward-name">${w.name}</span>
+                                <span class="ward-type type-${w.type}">${w.type}</span>
+                            </div>
+                            <div class="big-number ${numCls}">${w.availableBeds}</div>
+                            <div style="font-size:0.85rem;color:var(--muted)">beds available</div>
+                            <div class="progress-section">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill ${cls}" style="width:${pct}%"></div>
+                                </div>
+                                <div class="bed-stats">
+                                    <span class="available">${w.availableBeds} available</span>
+                                    <span class="total">${w.totalBeds} total</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                console.error(e);
+                document.getElementById('wardGrid').innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i>Failed to load data</div>';
+            }
+        }
+
+        loadAvailability();
+        connectCareChainRealtime([
+            {
+                destination: '/topic/realtime/beds',
+                handler: () => loadAvailability()
+            }
+        ]);
+    </script>
+</body>
+</html>

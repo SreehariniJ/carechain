@@ -1,0 +1,42 @@
+# Build
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+*.factorypath
+.springBeans
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Environment
+.env
+*.env
+jdk17/
+.maven-home/
+.m2wrapper/
+.codex-*
+ops/
+jdk17.zip

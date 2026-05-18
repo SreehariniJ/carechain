@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareChain - Patient Dashboard</title>
+    <link href="/webjars/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root { --bg:#0f1117; --card:#1a1d27; --border:#2a2d3a; --accent:#667eea; --accent2:#764ba2; --text:#e4e4e7; --muted:#71717a; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        .navbar-cc { background:rgba(26,29,39,0.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:12px 0; }
+        .navbar-cc .brand { font-size:1.25rem; font-weight:700; color:#fff; text-decoration:none; }
+        .navbar-cc .brand i { color:var(--accent); margin-right:8px; }
+        .navbar-cc .nav-right { display:flex; align-items:center; gap:16px; }
+        .badge-role { background:linear-gradient(135deg,var(--accent),var(--accent2)); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+        .btn-logout { background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text); padding:6px 16px; border-radius:8px; cursor:pointer; font-size:0.85rem; transition:all 0.2s; }
+        .btn-logout:hover { background:rgba(220,53,69,0.15); border-color:rgba(220,53,69,0.3); color:#ff6b7a; }
+        .container-main { max-width:1200px; margin:0 auto; padding:32px 20px; }
+        h2 { font-size:1.5rem; font-weight:700; margin-bottom:24px; }
+        .card-cc { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; margin-bottom:24px; transition:all 0.3s; }
+        .card-cc:hover { border-color:rgba(102,126,234,0.3); }
+        .card-cc h5 { font-size:1.1rem; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+        .card-cc h5 i { color:var(--accent); }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+        .profile-item { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
+        .profile-item:last-child { border:none; }
+        .profile-label { color:var(--muted); font-size:0.85rem; }
+        .profile-value { font-weight:500; }
+        .form-control-cc, .form-select-cc {
+            background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:10px;
+            color:#fff; padding:10px 14px; width:100%; font-size:0.9rem; transition:all 0.2s;
+        }
+        .form-control-cc:focus, .form-select-cc:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(102,126,234,0.2); }
+        .form-select-cc option { background:var(--card); }
+        .btn-primary-cc {
+            background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none;
+            padding:10px 24px; border-radius:10px; color:#fff; font-weight:600; cursor:pointer; transition:all 0.3s;
+        }
+        .btn-primary-cc:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(102,126,234,0.3); }
+        .btn-secondary-cc {
+            background:rgba(255,255,255,0.06); border:1px solid var(--border);
+            padding:10px 18px; border-radius:10px; color:var(--text); font-weight:600; cursor:pointer;
+        }
+        .token-display { text-align:center; padding:20px; }
+        .token-number { font-size:3rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .token-dept { color:var(--muted); font-size:0.9rem; margin-top:4px; }
+        .status-badge, .triage-pill, .review-pill { padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:6px; }
+        .status-WAITING { background:rgba(250,204,21,0.15); color:#facc15; }
+        .status-IN_PROGRESS { background:rgba(59,130,246,0.15); color:#3b82f6; }
+        .status-DONE { background:rgba(34,197,94,0.15); color:#22c55e; }
+        .status-BOOKED { background:rgba(59,130,246,0.15); color:#3b82f6; }
+        .status-COMPLETED { background:rgba(34,197,94,0.15); color:#22c55e; }
+        .status-CANCELLED { background:rgba(239,68,68,0.15); color:#ef4444; }
+        .triage-RED { background:rgba(239,68,68,0.15); color:#fda4af; }
+        .triage-ORANGE { background:rgba(249,115,22,0.16); color:#fdba74; }
+        .triage-YELLOW { background:rgba(250,204,21,0.16); color:#fde68a; }
+        .triage-GREEN { background:rgba(34,197,94,0.15); color:#86efac; }
+        .review-AUTO_APPROVED { background:rgba(34,197,94,0.15); color:#86efac; }
+        .review-PENDING_REVIEW { background:rgba(245,158,11,0.15); color:#fdba74; }
+        .review-OVERRIDDEN { background:rgba(59,130,246,0.15); color:#93c5fd; }
+        table { width:100%; border-collapse:collapse; }
+        th { color:var(--muted); font-size:0.8rem; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; padding:10px; text-align:left; border-bottom:1px solid var(--border); }
+        td { padding:12px 10px; border-bottom:1px solid var(--border); font-size:0.9rem; }
+        .empty-state { text-align:center; padding:32px; color:var(--muted); }
+        .empty-state i { font-size:2.5rem; margin-bottom:12px; display:block; }
+        .queue-live-card {
+            margin-top:18px; padding:18px; border-radius:14px; border:1px solid rgba(102,126,234,0.18);
+            background:linear-gradient(180deg,rgba(102,126,234,0.10),rgba(15,17,23,0.35));
+        }
+        .queue-live-top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+        .queue-live-label { color:var(--muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+        .queue-live-title { font-size:1.05rem; font-weight:600; }
+        .queue-live-copy { margin-top:8px; color:#cbd5f5; font-size:0.9rem; }
+        .queue-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }
+        .queue-metric { background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:12px; }
+        .queue-metric-label { color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; }
+        .queue-metric-value { margin-top:6px; font-size:1.15rem; font-weight:700; }
+        .queue-divider { height:1px; background:var(--border); margin:20px 0 4px; }
+        .toast-stack { position:fixed; top:24px; right:24px; z-index:1080; display:flex; flex-direction:column; gap:12px; }
+        .realtime-toast {
+            min-width:280px; max-width:360px; padding:14px 16px; border-radius:14px; border:1px solid var(--border);
+            background:rgba(26,29,39,0.96); box-shadow:0 12px 30px rgba(0,0,0,0.24);
+        }
+        .realtime-toast.success { border-color:rgba(34,197,94,0.35); }
+        .realtime-toast.warning { border-color:rgba(245,158,11,0.35); }
+        .realtime-toast.info { border-color:rgba(102,126,234,0.35); }
+        .realtime-toast-title { font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
+        .realtime-toast-body { margin-top:6px; font-size:0.92rem; color:var(--text); }
+        .section-copy { color:var(--muted); font-size:0.9rem; line-height:1.6; margin-bottom:14px; }
+        .triage-shell { display:grid; grid-template-columns:1.05fr 0.95fr; gap:18px; align-items:start; }
+        .triage-panel { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:14px; padding:16px; }
+        .triage-panel-title { font-size:0.92rem; font-weight:600; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        .triage-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+        .triage-helper { color:var(--muted); font-size:0.78rem; }
+        .triage-card { border:1px solid var(--border); border-radius:14px; padding:16px; background:rgba(255,255,255,0.04); }
+        .triage-card + .triage-card { margin-top:12px; }
+        .triage-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px; }
+        .triage-routing { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+        .triage-signals { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+        .signal-chip { font-size:0.75rem; color:#c4b5fd; background:rgba(124,58,237,0.16); border:1px solid rgba(124,58,237,0.24); padding:4px 8px; border-radius:999px; }
+        .triage-meta { color:var(--muted); font-size:0.8rem; margin-top:10px; line-height:1.5; }
+        .triage-confidence { font-weight:700; color:#fff; }
+        .triage-note { color:#cbd5f5; font-size:0.88rem; line-height:1.55; }
+        @media(max-width:992px) {
+            .triage-shell { grid-template-columns:1fr; }
+        }
+        @media(max-width:768px) {
+            .grid-2 { grid-template-columns:1fr; }
+            .queue-live-top { flex-direction:column; }
+            .queue-metrics { grid-template-columns:1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar-cc">
+        <div class="container-main" style="display:flex;justify-content:space-between;align-items:center;padding-top:0;padding-bottom:0">
+            <a href="/dashboard/patient" class="brand"><i class="bi bi-heart-pulse"></i>CareChain</a>
+            <div class="nav-right">
+                <span class="badge-role">PATIENT</span>
+                <span id="userEmail" style="font-size:0.85rem;color:var(--muted)"></span>
+                <button type="button" class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-main">
+        <h2><i class="bi bi-grid me-2" style="color:var(--accent)"></i>Patient Dashboard</h2>
+
+        <div class="grid-2">
+            <div class="card-cc">
+                <h5><i class="bi bi-person-circle"></i>My Profile</h5>
+                <div id="profileSection">
+                    <div class="empty-state"><i class="bi bi-hourglass-split"></i>Loading...</div>
+                </div>
+            </div>
+
+            <div class="card-cc">
+                <h5><i class="bi bi-ticket-perforated"></i>OPD Queue</h5>
+                <div style="margin-bottom:12px">
+                    <select id="department" class="form-select-cc">
+                        <option value="">Select Department</option>
+                        <option value="General Medicine">General Medicine</option>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                        <option value="Dermatology">Dermatology</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="ENT">ENT</option>
+                        <option value="Emergency">Emergency</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-primary-cc" onclick="joinQueue()">Get Token</button>
+                <div id="tokenResult" style="margin-top:16px;display:none">
+                    <div class="token-display">
+                        <div class="token-number" id="tokenNum"></div>
+                        <div class="token-dept" id="tokenDept"></div>
+                    </div>
+                </div>
+                <div class="queue-divider"></div>
+                <div id="queueLiveState" class="queue-live-card">
+                    <div class="empty-state" style="padding:18px 12px">
+                        <i class="bi bi-broadcast-pin"></i>No active queue token for today
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-cc">
+            <h5><i class="bi bi-cpu"></i>AI Symptom Router</h5>
+            <div class="section-copy">
+                Describe the symptoms you are experiencing. CareChain will suggest a department, assign a triage color, and flag cases for human review when needed.
+            </div>
+            <div class="triage-shell">
+                <div class="triage-panel">
+                    <div class="triage-panel-title">
+                        <span>Describe Symptoms</span>
+                        <span class="triage-helper">20 to 2000 characters</span>
+                    </div>
+                    <textarea id="symptomInput" class="form-control-cc" rows="7" placeholder="Example: I have chest tightness, shortness of breath on exertion, and dizziness since yesterday."></textarea>
+                    <div class="triage-actions">
+                        <button type="button" class="btn-primary-cc" onclick="submitTriage()">Route Symptoms</button>
+                        <button type="button" class="btn-secondary-cc" onclick="copyRecommendedDepartment()">Use Suggested Department</button>
+                        <span id="triageHint" class="triage-helper">The latest recommendation will appear on the right.</span>
+                    </div>
+                </div>
+                <div class="triage-panel">
+                    <div class="triage-panel-title">
+                        <span>Latest Recommendation</span>
+                        <span class="triage-helper">Human override supported</span>
+                    </div>
+                    <div id="triageLatest">
+                        <div class="empty-state" style="padding:22px 12px">
+                            <i class="bi bi-clipboard2-pulse"></i>No triage assessments yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="queue-divider"></div>
+            <div class="triage-panel-title" style="margin-top:14px;">
+                <span>Recent Triage History</span>
+                <span class="triage-helper">Newest first</span>
+            </div>
+            <div id="triageHistory">
+                <div class="empty-state" style="padding:18px 12px">
+                    <i class="bi bi-hourglass-split"></i>Loading triage history...
+                </div>
+            </div>
+        </div>
+
+        <div class="card-cc">
+            <h5><i class="bi bi-calendar-plus"></i>Book Appointment</h5>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+                <div style="flex:1;min-width:200px">
+                    <label style="font-size:0.8rem;color:var(--muted);margin-bottom:4px;display:block">Doctor</label>
+                    <select id="doctorSelect" class="form-select-cc" onchange="loadSlots()">
+                        <option value="">Select Doctor</option>
+                    </select>
+                </div>
+                <div style="flex:1;min-width:180px">
+                    <label style="font-size:0.8rem;color:var(--muted);margin-bottom:4px;display:block">Date</label>
+                    <input type="date" id="apptDate" class="form-control-cc" onchange="loadSlots()">
+                </div>
+                <div style="flex:1;min-width:150px">
+                    <label style="font-size:0.8rem;color:var(--muted);margin-bottom:4px;display:block">Slot</label>
+                    <select id="slotSelect" class="form-select-cc">
+                        <option value="">Select slot</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-primary-cc" onclick="bookAppointment()">Book</button>
+            </div>
+        </div>
+
+        <div class="card-cc">
+            <h5><i class="bi bi-calendar-check"></i>My Appointments</h5>
+            <div id="appointmentsList">
+                <div class="empty-state"><i class="bi bi-calendar-x"></i>No appointments yet</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastStack" class="toast-stack"></div>
+
+    <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+    <script src="/js/app-auth.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script>
+        let latestTriageAssessment = null;
+
+        function getErrorMessage(data, fallback) {
+            if (data && data.fieldErrors) {
+                const firstField = Object.keys(data.fieldErrors)[0];
+                if (firstField) {
+                    return data.fieldErrors[firstField];
+                }
+            }
+            return data && data.error ? data.error : fallback;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function showRealtimeToast(message, level = 'info') {
+            const stack = document.getElementById('toastStack');
+            const toast = document.createElement('div');
+            toast.className = `realtime-toast ${level}`;
+            toast.innerHTML = `
+                <div class="realtime-toast-title">Live Update</div>
+                <div class="realtime-toast-body">${escapeHtml(message)}</div>
+            `;
+            stack.appendChild(toast);
+            setTimeout(() => toast.remove(), 4500);
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '-';
+            return new Date(value).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function getQueueMessage(queue) {
+            if (queue.status === 'IN_PROGRESS') {
+                return 'Your consultation is in progress. Please stay nearby.';
+            }
+            if (queue.peopleAhead === 0) {
+                return 'You are next in line for this department.';
+            }
+            return `${queue.peopleAhead} patient${queue.peopleAhead === 1 ? '' : 's'} ahead of you right now.`;
+        }
+
+        function getTriageGuidance(level) {
+            if (level === 'RED') return 'Immediate escalation recommended. Please contact staff right away.';
+            if (level === 'ORANGE') return 'Urgent attention recommended within the next clinical slot.';
+            if (level === 'YELLOW') return 'Moderate priority. A same-day review is reasonable.';
+            return 'Lower urgency. Standard OPD or appointment flow is appropriate.';
+        }
+
+        function formatReviewStatus(value) {
+            return (value || '').replaceAll('_', ' ');
+        }
+
+        function renderActiveQueue(queue) {
+            const tokenResult = document.getElementById('tokenResult');
+            const queueLiveState = document.getElementById('queueLiveState');
+
+            if (!queue.active) {
+                tokenResult.style.display = 'none';
+                queueLiveState.innerHTML = `
+                    <div class="empty-state" style="padding:18px 12px">
+                        <i class="bi bi-broadcast-pin"></i>No active queue token for today
+                    </div>
+                `;
+                return;
+            }
+
+            tokenResult.style.display = 'block';
+            document.getElementById('tokenNum').textContent = '#' + queue.tokenNumber;
+            document.getElementById('tokenDept').textContent = `${queue.department} - ${queue.status}`;
+
+            queueLiveState.innerHTML = `
+                <div class="queue-live-top">
+                    <div>
+                        <div class="queue-live-label">Live Queue Status</div>
+                        <div class="queue-live-title">${escapeHtml(queue.department)} Token #${queue.tokenNumber}</div>
+                        <div class="queue-live-copy">${escapeHtml(getQueueMessage(queue))}</div>
+                    </div>
+                    <span class="status-badge status-${queue.status}">${escapeHtml(queue.status)}</span>
+                </div>
+                <div class="queue-metrics">
+                    <div class="queue-metric">
+                        <div class="queue-metric-label">People Ahead</div>
+                        <div class="queue-metric-value">${queue.peopleAhead}</div>
+                    </div>
+                    <div class="queue-metric">
+                        <div class="queue-metric-label">Now Serving</div>
+                        <div class="queue-metric-value">${queue.currentlyServing ? '#' + queue.currentlyServing : 'Soon'}</div>
+                    </div>
+                    <div class="queue-metric">
+                        <div class="queue-metric-label">Joined</div>
+                        <div class="queue-metric-value" style="font-size:0.95rem">${formatDateTime(queue.joinedAt)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTriageCard(assessment) {
+            const signals = Array.isArray(assessment.matchedSignals) ? assessment.matchedSignals : [];
+            return `
+                <div class="triage-card">
+                    <div class="triage-top">
+                        <div>
+                            <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">${formatDateTime(assessment.submittedAt)}</div>
+                            <div style="margin-top:8px;font-size:1rem;font-weight:600;">${escapeHtml(assessment.finalDepartment)}</div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                            <span class="triage-pill triage-${assessment.finalTriageLevel}">${escapeHtml(assessment.finalTriageLevel)}</span>
+                            <span class="review-pill review-${assessment.reviewStatus}">${escapeHtml(formatReviewStatus(assessment.reviewStatus))}</span>
+                        </div>
+                    </div>
+                    <div class="triage-routing">
+                        <span class="triage-helper">AI route: ${escapeHtml(assessment.suggestedDepartment)}</span>
+                        <span class="triage-helper">Confidence: <span class="triage-confidence">${assessment.confidenceScore}</span></span>
+                    </div>
+                    <div class="triage-note">${escapeHtml(assessment.routingRationale || '')}</div>
+                    <div class="triage-meta">${escapeHtml(getTriageGuidance(assessment.finalTriageLevel))}</div>
+                    ${assessment.reviewNote ? `<div class="triage-meta">Staff note: ${escapeHtml(assessment.reviewNote)}</div>` : ''}
+                    <div class="triage-meta">Symptoms: ${escapeHtml(assessment.symptoms)}</div>
+                    ${signals.length > 0 ? `
+                        <div class="triage-signals">
+                            ${signals.map(signal => `<span class="signal-chip">${escapeHtml(signal)}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderTriageHistory(assessments) {
+            const latest = document.getElementById('triageLatest');
+            const history = document.getElementById('triageHistory');
+
+            if (!assessments || assessments.length === 0) {
+                latestTriageAssessment = null;
+                latest.innerHTML = `
+                    <div class="empty-state" style="padding:22px 12px">
+                        <i class="bi bi-clipboard2-pulse"></i>No triage assessments yet
+                    </div>
+                `;
+                history.innerHTML = `
+                    <div class="empty-state" style="padding:18px 12px">
+                        <i class="bi bi-journal-text"></i>Your assessment history will appear here
+                    </div>
+                `;
+                return;
+            }
+
+            latestTriageAssessment = assessments[0];
+            latest.innerHTML = renderTriageCard(assessments[0]);
+            history.innerHTML = assessments.slice(0, 4).map(renderTriageCard).join('');
+        }
+
+        async function loadProfile() {
+            try {
+                const res = await apiFetch('/api/patients/me');
+                if (!res.ok) return;
+                const profile = await res.json();
+                document.getElementById('profileSection').innerHTML = `
+                    <div class="profile-item"><span class="profile-label">Name</span><span class="profile-value">${escapeHtml(profile.name || '-')}</span></div>
+                    <div class="profile-item"><span class="profile-label">Age</span><span class="profile-value">${profile.age || '-'}</span></div>
+                    <div class="profile-item"><span class="profile-label">Blood Group</span><span class="profile-value">${escapeHtml(profile.bloodGroup || '-')}</span></div>
+                    <div class="profile-item"><span class="profile-label">Phone</span><span class="profile-value">${escapeHtml(profile.phone || '-')}</span></div>
+                `;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function loadDoctors() {
+            const res = await apiFetch('/api/doctors');
+            if (!res.ok) return;
+            const doctors = await res.json();
+            const select = document.getElementById('doctorSelect');
+            select.innerHTML = '<option value="">Select Doctor</option>';
+            doctors.forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor.id;
+                option.textContent = `${doctor.name} - ${doctor.specialization}`;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadSlots() {
+            const doctorId = document.getElementById('doctorSelect').value;
+            const date = document.getElementById('apptDate').value;
+            const select = document.getElementById('slotSelect');
+            select.innerHTML = '<option value="">Select slot</option>';
+            if (!doctorId || !date || date.length !== 10) return;
+
+            try {
+                const res = await apiFetch(`/api/appointments/slots/${doctorId}/${date}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                (data.slots || []).forEach(slot => {
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = slot;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load slots', error);
+            }
+        }
+
+        async function bookAppointment() {
+            const doctorId = document.getElementById('doctorSelect').value;
+            const date = document.getElementById('apptDate').value;
+            const slot = document.getElementById('slotSelect').value;
+            if (!doctorId || !date || !slot) return alert('Please fill all fields');
+
+            try {
+                const res = await apiFetch('/api/appointments/book', {
+                    method: 'POST',
+                    body: JSON.stringify({ doctorId, date, slot })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(getErrorMessage(data, 'Failed to book appointment'));
+                showRealtimeToast(`Appointment booked with ${data.doctorName} on ${data.date} at ${data.slot}.`, 'success');
+                document.getElementById('doctorSelect').value = '';
+                document.getElementById('apptDate').value = '';
+                document.getElementById('slotSelect').innerHTML = '<option value="">Select slot</option>';
+                await loadAppointments();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function loadAppointments() {
+            try {
+                const res = await apiFetch('/api/appointments/me');
+                if (!res.ok) return;
+                const appointments = await res.json();
+                const list = document.getElementById('appointmentsList');
+                if (appointments.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><i class="bi bi-calendar-x"></i>No appointments yet</div>';
+                    return;
+                }
+
+                list.innerHTML = `<table>
+                    <thead><tr><th>Date</th><th>Slot</th><th>Doctor</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>${appointments.map(appointment => `
+                        <tr>
+                            <td>${escapeHtml(appointment.date)}</td>
+                            <td>${escapeHtml(appointment.slot)}</td>
+                            <td>${escapeHtml(appointment.doctorName)}</td>
+                            <td><span class="status-badge status-${appointment.status}">${escapeHtml(appointment.status)}</span></td>
+                            <td>
+                                ${appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED'
+                                    ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelAppt(${appointment.id})"><i class="bi bi-x"></i></button>`
+                                    : '-'}
+                            </td>
+                        </tr>
+                    `).join('')}</tbody>
+                </table>`;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function loadActiveQueue() {
+            try {
+                const res = await apiFetch('/api/queue/me/active');
+                if (!res.ok) return;
+                const queue = await res.json();
+                renderActiveQueue(queue);
+            } catch (error) {
+                console.error('Failed to load active queue', error);
+            }
+        }
+
+        async function loadTriageHistory() {
+            try {
+                const res = await apiFetch('/api/triage/me');
+                if (!res.ok) return;
+                const assessments = await res.json();
+                renderTriageHistory(assessments);
+            } catch (error) {
+                console.error('Failed to load triage history', error);
+            }
+        }
+
+        async function submitTriage() {
+            const symptoms = document.getElementById('symptomInput').value.trim();
+            if (symptoms.length < 20) {
+                return alert('Please describe your symptoms in a little more detail.');
+            }
+
+            try {
+                const res = await apiFetch('/api/triage/assess', {
+                    method: 'POST',
+                    body: JSON.stringify({ symptoms })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(getErrorMessage(data, 'Failed to assess symptoms'));
+                document.getElementById('symptomInput').value = '';
+                document.getElementById('triageHint').textContent = `Suggested route: ${data.finalDepartment} - ${data.finalTriageLevel}`;
+                if ([...document.getElementById('department').options].some(option => option.value === data.finalDepartment)) {
+                    document.getElementById('department').value = data.finalDepartment;
+                }
+                await loadTriageHistory();
+                showRealtimeToast(`Triage routed you to ${data.finalDepartment} with ${data.finalTriageLevel} priority.`, data.finalTriageLevel === 'GREEN' ? 'success' : 'warning');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function copyRecommendedDepartment() {
+            if (!latestTriageAssessment) {
+                return alert('Run an assessment first.');
+            }
+            const department = latestTriageAssessment.finalDepartment;
+            const select = document.getElementById('department');
+            if ([...select.options].some(option => option.value === department)) {
+                select.value = department;
+                showRealtimeToast(`Queue department set to ${department}.`, 'info');
+            } else {
+                alert(`No queue shortcut is configured for ${department}.`);
+            }
+        }
+
+        async function cancelAppt(id) {
+            if (!confirm('Cancel appointment?')) return;
+
+            try {
+                const res = await apiFetch(`/api/appointments/cancel/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(getErrorMessage(data, 'Failed to cancel appointment'));
+                loadAppointments();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function joinQueue() {
+            const department = document.getElementById('department').value;
+            if (!department) return alert('Select a department');
+
+            try {
+                const res = await apiFetch(`/api/queue/join/${department}`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(getErrorMessage(data, 'Failed to join queue'));
+                await loadActiveQueue();
+                showRealtimeToast(`Joined ${data.department} with token #${data.tokenNumber}.`, 'info');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        document.getElementById('apptDate').min = new Date().toISOString().split('T')[0];
+
+        async function initPage() {
+            const user = await initAuthenticatedPage('userEmail');
+            if (!user) return;
+            await loadProfile();
+            await loadDoctors();
+            await loadAppointments();
+            await loadActiveQueue();
+            await loadTriageHistory();
+            connectCareChainRealtime([
+                {
+                    destination: '/user/queue/realtime',
+                    handler: payload => {
+                        if (payload.kind === 'appointments-refresh') {
+                            loadAppointments();
+                        }
+                        if (payload.kind === 'queue-refresh') {
+                            loadActiveQueue();
+                        }
+                        if (payload.kind === 'triage-refresh') {
+                            loadTriageHistory();
+                        }
+                        if (payload.message && ['appointment-completed', 'queue-started', 'queue-completed', 'triage-submitted', 'triage-overridden'].includes(payload.source)) {
+                            showRealtimeToast(payload.message, payload.level || 'info');
+                        }
+                    }
+                }
+            ]);
+        }
+
+        initPage();
+    </script>
+</body>
+</html>

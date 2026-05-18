@@ -1,0 +1,37 @@
+# department|triageLevel|symptoms
+Emergency|RED|severe chest pain with sweating and unable to breathe
+Emergency|RED|slurred speech with one sided weakness and sudden facial droop
+Emergency|RED|loss of consciousness after collapsing with confusion
+Emergency|RED|seizure followed by confusion and unresponsiveness
+Emergency|RED|severe bleeding after an accident with dizziness
+Cardiology|ORANGE|recurrent chest tightness and shortness of breath while climbing stairs
+Cardiology|YELLOW|palpitations with mild dizziness after walking uphill
+Cardiology|YELLOW|high blood pressure with headache and chest pressure for two days
+Cardiology|GREEN|occasional skipped heart beats without pain but needs cardiac review
+Orthopedics|ORANGE|possible fracture after a fall with swelling and severe arm pain
+Orthopedics|YELLOW|twisted ankle with swelling and unable to bear weight
+Orthopedics|YELLOW|back pain shooting down the leg after lifting heavy boxes
+Orthopedics|GREEN|knee pain and stiffness for weeks while climbing stairs
+Pediatrics|ORANGE|infant with high fever poor feeding and fast breathing
+Pediatrics|YELLOW|child with fever cough sore throat and fatigue for two days
+Pediatrics|YELLOW|baby with vomiting diarrhea and fewer wet diapers
+Pediatrics|GREEN|child with mild cold and vaccination questions
+Pediatrics|GREEN|newborn with skin rash and low grade fever
+Dermatology|YELLOW|itchy rash with hives after starting a new medicine
+Dermatology|GREEN|eczema flare with dry itchy skin patches on the arms
+Dermatology|GREEN|acne breakouts on the face with oily skin
+Dermatology|YELLOW|red swollen skin allergy with intense itching
+Neurology|ORANGE|severe migraine with vomiting and sensitivity to light
+Neurology|YELLOW|tingling numbness in the fingers with dizziness
+Neurology|ORANGE|new tremor with imbalance and confusion
+Neurology|RED|sudden slurred speech and one sided weakness
+ENT|YELLOW|ear pain with reduced hearing and ringing
+ENT|YELLOW|sore throat with swollen tonsils and fever
+ENT|GREEN|sinus congestion runny nose and hoarse voice for one week
+ENT|GREEN|persistent nose blockage and sneezing from allergy
+General Medicine|ORANGE|persistent vomiting diarrhea fever and signs of dehydration
+General Medicine|YELLOW|fever cough body pain and weakness since yesterday
+General Medicine|GREEN|general fatigue mild cold and body ache without severe pain
+General Medicine|YELLOW|stomach upset nausea and diarrhea after eating outside food
+Emergency|RED|dizzy for three hours with sharp pain in chest spreading to left arm
+Cardiology|RED|feeling very dizzy with sharp pain in my chest that spreads to my left arm

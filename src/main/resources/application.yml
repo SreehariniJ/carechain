@@ -1,0 +1,96 @@
+debug: false
+
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:carechain;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/h2
+    clean-disabled: true
+  sql:
+    init:
+      mode: never
+  thymeleaf:
+    cache: false
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+jwt:
+  secret: Y2FyZWNoYWluLWhvc3BpdGFsLXJlc291cmNlLW1hbmFnZW1lbnQtc3lzdGVtLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLTIwMjQ=
+  expiration: 86400000
+
+carechain:
+  auth:
+    cookie:
+      name: jwt
+      max-age-seconds: 86400
+      secure: false
+      same-site: Lax
+  cors:
+    allowed-origins: http://localhost:8080,http://localhost:3000
+  bootstrap:
+    admin:
+      email:
+      password:
+      name: CareChain Admin
+  billing:
+    currency-code: INR
+    consultation-fee: 650
+    discharge-processing-fee: 250
+    general-daily-rate: 2200
+    icu-daily-rate: 9500
+    emergency-daily-rate: 4000
+    maternity-daily-rate: 3500
+  triage:
+    model:
+      version: local-triage-v2
+      corpus-resource: triage/training-corpus.csv
+      neighbor-count: 6
+      minimum-similarity: 0.01
+      weak-match-threshold: 0.14
+      emergency-similarity-threshold: 0.18
+      pediatric-age-cutoff: 14
+      pediatric-boost: 0.18
+      pediatric-context-boost: 0.24
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN

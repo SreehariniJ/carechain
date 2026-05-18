@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: CareChain Dashboards
+    folder: CareChain
+    type: file
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
