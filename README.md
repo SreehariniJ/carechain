@@ -6,6 +6,9 @@ It now includes live OPD workflow tracking, websocket-driven realtime updates, t
 ![Java](https://img.shields.io/badge/Java-17-orange?style=flat-square)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-green?style=flat-square)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-carechain.onrender.com-brightgreen?style=flat-square)](https://carechain.onrender.com)
+
+🚀 **Live Deployment:** [https://carechain.onrender.com](https://carechain.onrender.com)
 
 ## Tech Stack
 
